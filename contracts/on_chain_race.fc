@@ -1,0 +1,45 @@
+#include "imports/stdlib.fc";
+
+
+;; =============== storage =============================
+
+(int, cell) load_data() inline {
+  var ds = get_data().begin_parse();
+  var time = ds~load_uint(64);
+  var address = ds~load_ref();
+  return (time, address);
+}
+
+() save_data(int time, cell address) impure inline {
+  set_data(begin_cell()
+    .store_uint(time, 64)
+    .store_ref(address)
+    .end_cell());
+}
+
+;; =============== messages =============================
+
+() recv_internal(int msg_value, cell in_msg, slice in_msg_body) impure {
+  if (in_msg_body.slice_empty?()) {
+    return ();
+  }
+  int op = in_msg_body~load_uint(32);
+  var (time, address) = load_data();
+  if (op == 1) {
+    int new_time = in_msg_body~load_uint(64);
+    cell new_address = in_msg_body~load_ref();
+    save_data(new_time, new_address);
+  }
+}
+
+;; =============== getters =============================
+
+int get_run_time() method_id {
+  var (time, _) = load_data();
+  return time;
+}
+
+cell get_user_address() method_id {
+  var (_, address) = load_data();
+  return address;
+}
